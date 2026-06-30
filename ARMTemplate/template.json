@@ -11,7 +11,7 @@
     },
     "repoURL": {
       "type": "string",
-      "defaultValue": "https://github.com/zlowes/Verified-Helpdesk.git",
+      "defaultValue": "https://github.com/zachlowes/Verified-Helpdesk.git",
       "metadata": {
         "description": "GitHub repository URL for this application."
       }

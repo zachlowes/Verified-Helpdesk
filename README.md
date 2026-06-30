@@ -42,7 +42,7 @@ Record your **issuer DID** from Entra admin center → Verified ID → Settings.
 
 Complete prerequisites first, then deploy:
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fzlowes%2FVerified-Helpdesk%2Fmain%2FARMTemplate%2Ftemplate.json)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fzachlowes%2FVerified-Helpdesk%2Fmain%2FARMTemplate%2Ftemplate.json)
 
 ### Quick start for deployers
 
@@ -60,7 +60,7 @@ To use your own fork later, change the `repoURL` parameter during deploy or upda
 | Parameter | Description |
 |-----------|-------------|
 | `webAppName` | Globally unique App Service name |
-| `repoURL` | GitHub repo URL (default: `https://github.com/zlowes/Verified-Helpdesk.git`) |
+| `repoURL` | GitHub repo URL (default: `https://github.com/zachlowes/Verified-Helpdesk.git`) |
 | `branch` | Branch to deploy (default: `main`) |
 | `DidAuthority` | Your Verified ID issuer DID |
 | `ITHelpdeskGroupId` | Object ID of the IT Helpdesk security group |
@@ -149,7 +149,7 @@ Write-Host "Permissions assigned for '$AppName'."
 **Alternative in Cloud Shell:** clone this repo and run the helper script:
 
 ```powershell
-git clone https://github.com/zlowes/Verified-Helpdesk.git
+git clone https://github.com/zachlowes/Verified-Helpdesk.git
 cd Verified-Helpdesk
 .\scripts\grant-msi-permissions.ps1 -TenantId "<your-tenant-id>" -AppName "<your-app-service-name>"
 ```
