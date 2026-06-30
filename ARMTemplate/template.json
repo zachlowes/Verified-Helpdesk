@@ -104,7 +104,10 @@
       "identity": {
         "type": "SystemAssigned"
       },
-      "dependsOn": "[concat(createArray(resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))), if(parameters('enableApplicationInsights'), createArray(resourceId('Microsoft.Insights/components', variables('appInsightsName'))), createArray()))]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
+        "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]"
+      ],
       "properties": {
         "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
         "httpsOnly": true,
