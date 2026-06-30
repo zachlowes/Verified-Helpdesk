@@ -5,44 +5,59 @@
     Layout = "_Layout";
 }
 
-<div class="text-center">
+<div class="portal-hero">
     <h1>Verification Portal</h1>
     <p class="lead">Start a bidirectional identity verification session with a caller.</p>
+    <p class="portal-disclaimer">Verification state is held in memory only for the duration of a session. No credential data is persisted by this application.</p>
+</div>
 
-    <div id="message-wrapper" class="my-4">
+<div class="portal-content">
+    <div id="message-wrapper" class="mb-3">
         <div id="message" class="alert alert-info d-none"></div>
     </div>
 
-    <div id="step-start" class="verification-card card p-4 mb-4">
-        <h2 class="h4">Step 1: Start session</h2>
-        <p>Sign in with your work account, then start a new verification session.</p>
+    <div id="step-start" class="portal-panel">
+        <p class="portal-step-indicator">Step 1 of 4</p>
+        <div class="portal-step-header">
+            <h2>Start session</h2>
+            <p>Sign in with your work account, then start a new verification session.</p>
+        </div>
         <button type="button" id="start-session" class="btn btn-primary">Start Verification</button>
     </div>
 
-    <div id="step-agent" class="verification-card card p-4 mb-4 d-none">
-        <h2 class="h4">Step 2: Verify yourself</h2>
-        <p>Present your VerifiedEmployee credential from Microsoft Authenticator.</p>
-        <div id="agent-qrcode" class="d-flex justify-content-center my-3"></div>
-        <p id="agent-status" class="text-muted">Waiting for your verification...</p>
+    <div id="step-agent" class="portal-panel d-none">
+        <p class="portal-step-indicator">Step 2 of 4</p>
+        <div class="portal-step-header">
+            <h2>Verify yourself</h2>
+            <p>Present your VerifiedEmployee credential from Microsoft Authenticator.</p>
+        </div>
+        <div id="agent-qrcode" class="qrcode-container"></div>
+        <p id="agent-status" class="portal-status">Preparing verification request...</p>
     </div>
 
-    <div id="step-caller-link" class="verification-card card p-4 mb-4 d-none">
-        <h2 class="h4">Step 3: Send link to caller</h2>
-        <p class="text-success fw-semibold">You are verified — @ViewData["AuthorizedAgentLabel"]</p>
-        <p>Name: <span id="verified-agent-name"></span></p>
-        <p>Share this link with the caller:</p>
+    <div id="step-caller-link" class="portal-panel d-none">
+        <p class="portal-step-indicator">Step 3 of 4</p>
+        <div class="portal-step-header">
+            <h2>Send link to caller</h2>
+            <p class="portal-badge">You are verified — @ViewData["AuthorizedAgentLabel"]</p>
+            <p>Name: <strong id="verified-agent-name"></strong></p>
+            <p>Share this link with the caller:</p>
+        </div>
         <div class="input-group mb-3">
             <input type="text" class="form-control" id="caller-link" readonly />
             <button class="btn btn-outline-secondary" type="button" id="copy-link">Copy</button>
         </div>
-        <p id="user-status" class="text-muted">Waiting for caller verification...</p>
+        <p id="user-status" class="portal-status">Waiting for caller verification...</p>
     </div>
 
-    <div id="step-complete" class="verification-card card p-4 mb-4 d-none">
-        <h2 class="h4">Verification complete</h2>
-        <ul class="list-unstyled">
-            <li>Caller: <span id="verified-user-name"></span></li>
-            <li>Email: <span id="verified-user-mail"></span></li>
+    <div id="step-complete" class="portal-panel d-none">
+        <p class="portal-step-indicator">Step 4 of 4</p>
+        <div class="portal-step-header">
+            <h2>Verification complete</h2>
+        </div>
+        <ul class="list-unstyled mb-0">
+            <li>Caller: <strong id="verified-user-name"></strong></li>
+            <li>Email: <strong id="verified-user-mail"></strong></li>
         </ul>
     </div>
 </div>
@@ -77,6 +92,7 @@
             }
             const data = await response.json();
             sessionId = data.sessionId;
+            document.getElementById("agent-status").textContent = "Preparing verification request...";
             showStep("step-agent");
             await startAgentPresentation();
         }
@@ -89,6 +105,7 @@
                 return;
             }
             agentQr.makeCode(payload.url);
+            document.getElementById("agent-status").textContent = "Waiting for your verification...";
             pollSessionStatus();
         }
 
@@ -119,8 +136,12 @@
         document.getElementById("start-session").addEventListener("click", startSession);
         document.getElementById("copy-link").addEventListener("click", () => {
             const input = document.getElementById("caller-link");
+            const copyBtn = document.getElementById("copy-link");
             input.select();
             navigator.clipboard.writeText(input.value);
+            const originalText = copyBtn.textContent;
+            copyBtn.textContent = "Copied";
+            setTimeout(() => { copyBtn.textContent = originalText; }, 2000);
         });
 
         showStep("step-start");

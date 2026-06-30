@@ -3,9 +3,14 @@
     Layout = "_Layout";
 }
 
-<div class="text-center">
+<div class="portal-hero">
     <h1>Verification Session</h1>
-    <div class="alert alert-warning">
-        @(ViewData["ErrorMessage"] ?? "This verification session is invalid or has expired.")
+</div>
+
+<div class="portal-content">
+    <div class="portal-panel">
+        <div class="alert alert-warning mb-0">
+            @(ViewData["ErrorMessage"] ?? "This verification session is invalid or has expired.")
+        </div>
     </div>
 </div>

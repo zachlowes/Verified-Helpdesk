@@ -7,39 +7,48 @@
     var sessionId = ViewData["SessionId"] as string ?? Model.SessionId;
 }
 
-<div class="text-center">
+<div class="portal-hero">
     <h1>Identity Verification</h1>
+    <p class="lead">Verify your identity to continue your support call.</p>
+</div>
 
+<div class="portal-content">
     @if (Model.Status == VerificationStatuses.Complete)
     {
-        <div class="card p-4 mb-4">
-            <h2 class="h4 text-success">Verification complete</h2>
-            <p>This verification session has already been completed.</p>
+        <div class="portal-panel">
+            <div class="portal-step-header">
+                <h2 class="text-success">Verification complete</h2>
+                <p>This verification session has already been completed.</p>
+            </div>
         </div>
     }
     else
     {
-    <div class="card p-4 mb-4">
-        <p class="text-success fw-semibold mb-1">@ViewData["AuthorizedAgentLabel"]</p>
-        <p class="mb-0">Agent: <strong>@ViewData["AgentDisplayName"]</strong></p>
-    </div>
+        <div class="portal-panel">
+            <p class="portal-badge">@ViewData["AuthorizedAgentLabel"]</p>
+            <p class="mb-0">Agent: <strong>@ViewData["AgentDisplayName"]</strong></p>
+        </div>
 
-    <div id="message-wrapper" class="my-3">
-        <div id="message" class="alert alert-info d-none"></div>
-    </div>
+        <div id="message-wrapper" class="mb-3">
+            <div id="message" class="alert alert-info d-none"></div>
+        </div>
 
-    <div id="step-user" class="card p-4 mb-4">
-        <h2 class="h4">Verify your identity</h2>
-        <p>Present your VerifiedEmployee credential from Microsoft Authenticator to continue.</p>
-        <div id="user-qrcode" class="d-flex justify-content-center my-3"></div>
-        <p id="user-status" class="text-muted">Preparing verification request...</p>
-        <a id="check-result" class="btn btn-link d-none">Continue</a>
-    </div>
+        <div id="step-user" class="portal-panel">
+            <div class="portal-step-header">
+                <h2>Verify your identity</h2>
+                <p>Present your VerifiedEmployee credential from Microsoft Authenticator to continue.</p>
+            </div>
+            <div id="user-qrcode" class="qrcode-container"></div>
+            <p id="user-status" class="portal-status">Preparing verification request...</p>
+            <a id="check-result" class="btn btn-link d-none">Continue</a>
+        </div>
 
-    <div id="step-complete" class="card p-4 mb-4 d-none">
-        <h2 class="h4 text-success">Verification complete</h2>
-        <p>Your identity has been verified. You may continue your support call with the agent.</p>
-    </div>
+        <div id="step-complete" class="portal-panel d-none">
+            <div class="portal-step-header">
+                <h2 class="text-success">Verification complete</h2>
+                <p>Your identity has been verified. You may continue your support call with the agent.</p>
+            </div>
+        </div>
     }
 </div>
 

@@ -11,7 +11,7 @@
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-light bg-light border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-sm portal-navbar border-bottom box-shadow">
             <div class="container">
                 <a class="navbar-brand d-flex align-items-center gap-2" asp-controller="Agent" asp-action="Index">
                     @{
@@ -28,14 +28,14 @@
             </div>
         </nav>
     </header>
-    <div class="container pb-4">
+    <div class="portal-page">
         <main role="main">
             @RenderBody()
         </main>
     </div>
-    <footer class="border-top footer text-muted py-3">
+    <footer class="portal-footer">
         <div class="container">
-            Verification state is held in memory only for the duration of a session. No credential data is persisted by this application.
+            &copy; @DateTime.UtcNow.Year @companyName
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
