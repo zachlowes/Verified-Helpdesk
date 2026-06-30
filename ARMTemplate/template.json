@@ -53,6 +53,13 @@
       "metadata": {
         "description": "Display name shown in the portal header."
       }
+    },
+    "enableApplicationInsights": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Create Application Insights for audit telemetry. Set to false if Microsoft.OperationalInsights cannot be registered on this subscription."
+      }
     }
   },
   "variables": {
@@ -61,6 +68,7 @@
   },
   "resources": [
     {
+      "condition": "[parameters('enableApplicationInsights')]",
       "type": "Microsoft.Insights/components",
       "apiVersion": "2020-02-02",
       "name": "[variables('appInsightsName')]",
@@ -96,78 +104,14 @@
       "identity": {
         "type": "SystemAssigned"
       },
-      "dependsOn": [
-        "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
-        "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]"
-      ],
+      "dependsOn": "[concat(createArray(resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))), if(parameters('enableApplicationInsights'), createArray(resourceId('Microsoft.Insights/components', variables('appInsightsName'))), createArray()))]",
       "properties": {
         "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
         "httpsOnly": true,
         "siteConfig": {
           "alwaysOn": true,
           "netFrameworkVersion": "v8.0",
-          "appSettings": [
-            {
-              "name": "SCM_COMMAND_IDLE_TIMEOUT",
-              "value": "600"
-            },
-            {
-              "name": "SCM_DO_BUILD_DURING_DEPLOYMENT",
-              "value": "true"
-            },
-            {
-              "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
-              "value": "[reference(resourceId('Microsoft.Insights/components', variables('appInsightsName'))).ConnectionString]"
-            },
-            {
-              "name": "VerifiedID__DidAuthority",
-              "value": "[parameters('DidAuthority')]"
-            },
-            {
-              "name": "VerifiedID__ManagedIdentity",
-              "value": "true"
-            },
-            {
-              "name": "VerifiedID__EnableFaceCheck",
-              "value": "false"
-            },
-            {
-              "name": "AppSettings__ITHelpdeskGroupId",
-              "value": "[parameters('ITHelpdeskGroupId')]"
-            },
-            {
-              "name": "AppSettings__CompanyName",
-              "value": "[parameters('companyName')]"
-            },
-            {
-              "name": "AppSettings__PortalTitle",
-              "value": "Verified Helpdesk"
-            },
-            {
-              "name": "AppSettings__AuthorizedAgentLabel",
-              "value": "Authorized Helpdesk Agent"
-            },
-            {
-              "name": "AppSettings__UseTeamsWebhook",
-              "value": "false"
-            },
-            {
-              "name": "AzureAd__TenantId",
-              "value": "[parameters('AzureAdTenantId')]"
-            },
-            {
-              "name": "AzureAd__ClientId",
-              "value": "[parameters('AzureAdClientId')]"
-            },
-            {
-              "name": "AzureAd__Instance",
-              "value": "https://login.microsoftonline.com/"
-            },
-            {
-              "name": "AzureAd__CallbackPath",
-              "value": "/signin-oidc"
-            }
-          ]
+          "appSettings": "[concat(createArray(createObject('name', 'SCM_COMMAND_IDLE_TIMEOUT', 'value', '600'), createObject('name', 'SCM_DO_BUILD_DURING_DEPLOYMENT', 'value', 'true')), if(parameters('enableApplicationInsights'), createArray(createObject('name', 'APPLICATIONINSIGHTS_CONNECTION_STRING', 'value', reference(resourceId('Microsoft.Insights/components', variables('appInsightsName'))).ConnectionString)), createArray()), createArray(createObject('name', 'VerifiedID__DidAuthority', 'value', parameters('DidAuthority')), createObject('name', 'VerifiedID__ManagedIdentity', 'value', 'true'), createObject('name', 'VerifiedID__EnableFaceCheck', 'value', 'false'), createObject('name', 'AppSettings__ITHelpdeskGroupId', 'value', parameters('ITHelpdeskGroupId')), createObject('name', 'AppSettings__CompanyName', 'value', parameters('companyName')), createObject('name', 'AppSettings__PortalTitle', 'value', 'Verified Helpdesk'), createObject('name', 'AppSettings__AuthorizedAgentLabel', 'value', 'Authorized Helpdesk Agent'), createObject('name', 'AppSettings__UseTeamsWebhook', 'value', 'false'), createObject('name', 'AzureAd__TenantId', 'value', parameters('AzureAdTenantId')), createObject('name', 'AzureAd__ClientId', 'value', parameters('AzureAdClientId')), createObject('name', 'AzureAd__Instance', 'value', 'https://login.microsoftonline.com/'), createObject('name', 'AzureAd__CallbackPath', 'value', '/signin-oidc')))]"
         }
       },
       "resources": [
@@ -193,6 +137,7 @@
       "value": "[concat('https://', parameters('webAppName'), '.azurewebsites.net')]"
     },
     "applicationInsightsName": {
+      "condition": "[parameters('enableApplicationInsights')]",
       "type": "string",
       "value": "[variables('appInsightsName')]"
     }

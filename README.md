@@ -65,6 +65,14 @@ Requires `Install-Module Microsoft.Graph` and `Application.ReadWrite.All` consen
 
 ### Step 3 — Deploy to Azure
 
+The default deployment creates Application Insights for audit telemetry, which requires the `Microsoft.OperationalInsights` resource provider on your subscription. If you have never deployed monitoring resources, register providers first (requires subscription **Contributor** or **Owner**):
+
+```powershell
+.\scripts\register-azure-providers.ps1 -Wait
+```
+
+Or in [Azure Cloud Shell](https://portal.azure.com): clone this repo, then run the same command from the repo root.
+
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fzachlowes%2FVerified-Helpdesk%2Fmain%2FARMTemplate%2Ftemplate.json)
 
 Click **Deploy to Azure** and provide:
@@ -79,8 +87,9 @@ Click **Deploy to Azure** and provide:
 | `companyName` | Organization name shown in the portal (default: `Your Organization`) |
 | `repoURL` | GitHub repo URL (default: `https://github.com/zachlowes/Verified-Helpdesk.git`) |
 | `branch` | Branch to deploy (default: `main`) |
+| `enableApplicationInsights` | Create Application Insights for audit events (default: `true`). Set to `false` on restricted subscriptions that cannot register `Microsoft.OperationalInsights`. The app works without it; audit telemetry is skipped. |
 
-The template provisions an App Service Plan (Basic B1), Web App with system-assigned managed identity, Application Insights, GitHub source control integration, and required app settings.
+The template provisions an App Service Plan (Basic B1), Web App with system-assigned managed identity, optional Application Insights, GitHub source control integration, and required app settings.
 
 To deploy from your own fork, set the `repoURL` parameter or update the Deploy button URL in your fork's README.
 
@@ -123,7 +132,7 @@ Confirm these in App Service → **Configuration** (full list in [`appservice-co
 | `VerifiedID__ManagedIdentity` | `true` on Azure |
 | `AppSettings__ITHelpdeskGroupId` | Helpdesk group object ID |
 | `AzureAd__TenantId` / `AzureAd__ClientId` | Agent sign-in |
-| `APPLICATIONINSIGHTS_CONNECTION_STRING` | Set by ARM template |
+| `APPLICATIONINSIGHTS_CONNECTION_STRING` | Set by ARM template when `enableApplicationInsights` is `true` |
 
 If you skipped Step 2, run `register-agent-app.ps1` now and set `AzureAd__ClientId` manually.
 
@@ -173,6 +182,7 @@ dotnet run --project VerifiedHelpdesk.csproj
 
 | Problem | Likely cause | Fix |
 |---------|--------------|-----|
+| `Failed to register resource provider 'microsoft.operationalinsights'` | Monitoring resource providers not registered, or insufficient subscription permissions | Run [`register-azure-providers.ps1`](scripts/register-azure-providers.ps1) with `-Wait`, confirm status is **Registered**, then redeploy. Or deploy with `enableApplicationInsights=false`. |
 | Default Azure placeholder page | Deploy failed | Check Deployment Center logs; confirm `deploy.cmd` exists at repo root |
 | `deploy.cmd` not recognized | Monorepo `.deployment` without local `deploy.cmd` | Use this standalone repo, not the upstream subfolder (see note below) |
 | Verified ID API 401/403 | MSI permissions missing | Run [`grant-msi-permissions.ps1`](scripts/grant-msi-permissions.ps1) |
@@ -224,7 +234,7 @@ Verified-Helpdesk/
 ├── deploy.cmd / .deployment    # Kudu custom deploy
 ├── Controllers/                # Agent, Caller, API, Callback
 ├── Services/                   # Session, Graph, Audit, Verified ID
-├── scripts/                    # MSI and app registration helpers
+├── scripts/                    # MSI, app registration, and Azure provider helpers
 └── Views/                      # Agent and caller portals
 ```
 
