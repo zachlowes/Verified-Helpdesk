@@ -31,7 +31,7 @@ public class CallerController : Controller
         }
 
         ViewData["Title"] = _configuration.GetValue("AppSettings:PortalTitle", "Verified Helpdesk");
-        ViewData["AuthorizedAgentLabel"] = _configuration.GetValue("AppSettings:AuthorizedAgentLabel", "Authorized Helpdesk Agent");
+        ViewData["AuthorizedAgentLabel"] = _configuration.GetValue("AppSettings:AuthorizedAgentLabel", "Verified Employee");
         ViewData["SessionId"] = sessionId;
         ViewData["AgentDisplayName"] = session.AgentDisplayName;
         return View(session);

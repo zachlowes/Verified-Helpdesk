@@ -29,12 +29,6 @@
         "description": "Your Entra Verified ID issuer DID."
       }
     },
-    "ITHelpdeskGroupId": {
-      "type": "string",
-      "metadata": {
-        "description": "Object ID of the IT Helpdesk security group used for agent authorization."
-      }
-    },
     "AzureAdTenantId": {
       "type": "string",
       "metadata": {
@@ -114,7 +108,7 @@
         "siteConfig": {
           "alwaysOn": true,
           "netFrameworkVersion": "v8.0",
-          "appSettings": "[concat(createArray(createObject('name', 'SCM_COMMAND_IDLE_TIMEOUT', 'value', '600'), createObject('name', 'SCM_DO_BUILD_DURING_DEPLOYMENT', 'value', 'true')), if(parameters('enableApplicationInsights'), createArray(createObject('name', 'APPLICATIONINSIGHTS_CONNECTION_STRING', 'value', reference(resourceId('Microsoft.Insights/components', variables('appInsightsName'))).ConnectionString)), createArray()), createArray(createObject('name', 'VerifiedID__DidAuthority', 'value', parameters('DidAuthority')), createObject('name', 'VerifiedID__ManagedIdentity', 'value', 'true'), createObject('name', 'VerifiedID__EnableFaceCheck', 'value', 'false'), createObject('name', 'AppSettings__ITHelpdeskGroupId', 'value', parameters('ITHelpdeskGroupId')), createObject('name', 'AppSettings__CompanyName', 'value', parameters('companyName')), createObject('name', 'AppSettings__PortalTitle', 'value', 'Verified Helpdesk'), createObject('name', 'AppSettings__AuthorizedAgentLabel', 'value', 'Authorized Helpdesk Agent'), createObject('name', 'AppSettings__UseTeamsWebhook', 'value', 'false'), createObject('name', 'AzureAd__TenantId', 'value', parameters('AzureAdTenantId')), createObject('name', 'AzureAd__ClientId', 'value', parameters('AzureAdClientId')), createObject('name', 'AzureAd__Instance', 'value', 'https://login.microsoftonline.com/'), createObject('name', 'AzureAd__CallbackPath', 'value', '/signin-oidc')))]"
+          "appSettings": "[concat(createArray(createObject('name', 'SCM_COMMAND_IDLE_TIMEOUT', 'value', '600'), createObject('name', 'SCM_DO_BUILD_DURING_DEPLOYMENT', 'value', 'true')), if(parameters('enableApplicationInsights'), createArray(createObject('name', 'APPLICATIONINSIGHTS_CONNECTION_STRING', 'value', reference(resourceId('Microsoft.Insights/components', variables('appInsightsName'))).ConnectionString)), createArray()), createArray(createObject('name', 'VerifiedID__DidAuthority', 'value', parameters('DidAuthority')), createObject('name', 'VerifiedID__ManagedIdentity', 'value', 'true'), createObject('name', 'VerifiedID__EnableFaceCheck', 'value', 'false'), createObject('name', 'AppSettings__CompanyName', 'value', parameters('companyName')), createObject('name', 'AppSettings__PortalTitle', 'value', 'Verified Helpdesk'), createObject('name', 'AppSettings__AuthorizedAgentLabel', 'value', 'Verified Employee'), createObject('name', 'AppSettings__UseTeamsWebhook', 'value', 'false'), createObject('name', 'AzureAd__TenantId', 'value', parameters('AzureAdTenantId')), createObject('name', 'AzureAd__ClientId', 'value', parameters('AzureAdClientId')), createObject('name', 'AzureAd__Instance', 'value', 'https://login.microsoftonline.com/'), createObject('name', 'AzureAd__CallbackPath', 'value', '/signin-oidc')))]"
         }
       },
       "resources": [

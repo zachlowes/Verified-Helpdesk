@@ -18,7 +18,7 @@ public class AgentController : Controller
     public IActionResult Index()
     {
         ViewData["Title"] = _configuration.GetValue("AppSettings:PortalTitle", "Verified Helpdesk");
-        ViewData["AuthorizedAgentLabel"] = _configuration.GetValue("AppSettings:AuthorizedAgentLabel", "Authorized Helpdesk Agent");
+        ViewData["AuthorizedAgentLabel"] = _configuration.GetValue("AppSettings:AuthorizedAgentLabel", "Verified Employee");
         return View();
     }
 

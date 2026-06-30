@@ -6,20 +6,17 @@ namespace VerifiedHelpdesk.Services;
 public class VerificationCallbackService
 {
     private readonly SessionService _sessionService;
-    private readonly GraphAuthorizationService _graphAuthorizationService;
     private readonly AuditService _auditService;
     private readonly IConfiguration _configuration;
     private readonly ILogger<VerificationCallbackService> _log;
 
     public VerificationCallbackService(
         SessionService sessionService,
-        GraphAuthorizationService graphAuthorizationService,
         AuditService auditService,
         IConfiguration configuration,
         ILogger<VerificationCallbackService> log)
     {
         _sessionService = sessionService;
-        _graphAuthorizationService = graphAuthorizationService;
         _auditService = auditService;
         _configuration = configuration;
         _log = log;
@@ -42,7 +39,7 @@ public class VerificationCallbackService
         {
             if (requestStatus == "presentation_error")
             {
-                await FailSessionAsync(presentation.SessionId, "Presentation failed.");
+                FailSession(presentation.SessionId, "Presentation failed.");
             }
             return;
         }
@@ -50,13 +47,13 @@ public class VerificationCallbackService
         var callback = JsonConvert.DeserializeObject<CallbackEvent>(callbackBody);
         if (callback?.verifiedCredentialsData == null || callback.verifiedCredentialsData.Length == 0)
         {
-            await FailSessionAsync(presentation.SessionId, "No verified credential data received.");
+            FailSession(presentation.SessionId, "No verified credential data received.");
             return;
         }
 
         if (presentation.Phase == VerificationPhases.Agent)
         {
-            await ProcessAgentPresentationAsync(presentation.SessionId, callback);
+            ProcessAgentPresentationAsync(presentation.SessionId, callback);
         }
         else if (presentation.Phase == VerificationPhases.User)
         {
@@ -64,7 +61,7 @@ public class VerificationCallbackService
         }
     }
 
-    private async Task ProcessAgentPresentationAsync(string sessionId, CallbackEvent callback)
+    private void ProcessAgentPresentationAsync(string sessionId, CallbackEvent callback)
     {
         var session = _sessionService.GetSession(sessionId);
         if (session == null)
@@ -79,18 +76,7 @@ public class VerificationCallbackService
 
         if (string.IsNullOrWhiteSpace(session.AgentUpn))
         {
-            await FailSessionAsync(sessionId, "Agent UPN (revocationId) missing from credential.");
-            return;
-        }
-
-        session.AgentAuthorized = await _graphAuthorizationService.IsHelpdeskMemberAsync(session.AgentUpn);
-        if (session.AgentAuthorized != true)
-        {
-            session.Status = VerificationStatuses.Failed;
-            session.FailureReason = "Agent is not a member of the authorized helpdesk group.";
-            session.CompletedAt = DateTimeOffset.UtcNow;
-            _sessionService.SaveSession(session);
-            _auditService.TrackVerificationFailed(session, session.FailureReason);
+            FailSession(sessionId, "Agent UPN (revocationId) missing from credential.");
             return;
         }
 
@@ -122,7 +108,7 @@ public class VerificationCallbackService
         await Task.CompletedTask;
     }
 
-    private async Task FailSessionAsync(string sessionId, string reason)
+    private void FailSession(string sessionId, string reason)
     {
         var session = _sessionService.GetSession(sessionId);
         if (session == null)
@@ -135,7 +121,6 @@ public class VerificationCallbackService
         session.CompletedAt = DateTimeOffset.UtcNow;
         _sessionService.SaveSession(session);
         _auditService.TrackVerificationFailed(session, reason);
-        await Task.CompletedTask;
     }
 
     private CredentialClaims ExtractClaims(CallbackEvent callback)

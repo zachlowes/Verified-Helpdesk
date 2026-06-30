@@ -1,16 +1,15 @@
 # Verified Helpdesk
 
-Bidirectional identity verification for IT helpdesk calls using [Microsoft Entra Verified ID](https://learn.microsoft.com/en-us/entra/verified-id/). Agents and callers each present the managed **VerifiedEmployee** credential from Microsoft Authenticator. Agent authorization is enforced via live **Microsoft Graph** group membership — no separate agent credential.
+Bidirectional identity verification for IT helpdesk calls using [Microsoft Entra Verified ID](https://learn.microsoft.com/en-us/entra/verified-id/). Any signed-in employee can initiate a session by presenting the managed **VerifiedEmployee** credential from Microsoft Authenticator; the other party verifies the same way.
 
 Based on the Microsoft [`6-woodgrove-helpdesk`](https://github.com/Azure-Samples/active-directory-verifiable-credentials-dotnet/tree/main/6-woodgrove-helpdesk) sample, extended for agent-first bidirectional verification and fixed for standalone Azure App Service deployment.
 
 ## Features
 
-- Agent Entra ID sign-in before starting a session
-- Agent presents VerifiedEmployee credential first
-- Graph `checkMemberGroups` authorization against your IT Helpdesk security group
-- Caller link (`/caller/{sessionId}`) shows verified agent identity, then prompts caller verification
-- App Service **Managed Identity** for Verified ID and Graph (no API secrets)
+- Employee Entra ID sign-in before starting a session
+- Initiator presents VerifiedEmployee credential first
+- Caller link (`/caller/{sessionId}`) shows verified initiator identity, then prompts caller verification
+- App Service **Managed Identity** for Verified ID (no API secrets)
 - Application Insights audit events per verification
 - Configurable organization branding via app settings
 - Face Check optional (disabled by default)
@@ -18,8 +17,8 @@ Based on the Microsoft [`6-woodgrove-helpdesk`](https://github.com/Azure-Samples
 ## Architecture
 
 ```
-Agent (signed in) → present VC → Graph group check → share caller link
-Caller (anonymous) → sees verified agent → present VC → session complete → audit event
+Employee (signed in) → present VC → share caller link
+Caller (anonymous) → sees verified employee → present VC → session complete → audit event
 ```
 
 See [Verified helpdesk with Microsoft Entra Verified ID](https://learn.microsoft.com/en-us/entra/verified-id/helpdesk-with-verified-id) for the Microsoft reference pattern.
@@ -30,12 +29,11 @@ Gather these before starting setup:
 
 1. **Entra ID tenant** with a verified custom domain (required for Verified ID Quick setup)
 2. **Microsoft Entra Verified ID** with managed **VerifiedEmployee** and MyAccount issuance enabled — [Quick setup guide](https://learn.microsoft.com/en-us/entra/verified-id/verifiable-credentials-configure-tenant-quick)
-3. **IT Helpdesk security group** with helpdesk agents as members — record its **object ID**
-4. **Issuer DID** from Entra admin center → Verified ID → Settings
-5. **Tenant ID** from Entra admin center
-6. **Azure subscription**
-7. **GitHub repository** hosting this code (for App Service source control)
-8. Entra ID role that can assign application permissions (for example **Cloud Application Administrator** or **Privileged Role Administrator**)
+3. **Issuer DID** from Entra admin center → Verified ID → Settings
+4. **Tenant ID** from Entra admin center
+5. **Azure subscription**
+6. **GitHub repository** hosting this code (for App Service source control)
+7. Entra ID role that can assign application permissions (for example **Cloud Application Administrator** or **Privileged Role Administrator**)
 
 ## Setup guide
 
@@ -44,8 +42,7 @@ Follow these steps in order.
 ### Step 1 — Configure Entra ID
 
 1. Complete Verified ID Quick setup with the **VerifiedEmployee** credential and MyAccount issuance enabled.
-2. Create an IT Helpdesk security group, add your agents, and record the group's **object ID**.
-3. Record your **issuer DID** and **tenant ID**.
+2. Record your **issuer DID** and **tenant ID**.
 
 ### Step 2 — Register agent sign-in app
 
@@ -81,7 +78,6 @@ Click **Deploy to Azure** and provide:
 |-----------|-------------|
 | `webAppName` | Globally unique App Service name |
 | `DidAuthority` | Your Verified ID issuer DID |
-| `ITHelpdeskGroupId` | Object ID of the IT Helpdesk security group |
 | `AzureAdTenantId` | Entra ID tenant ID |
 | `AzureAdClientId` | Client ID from Step 2 |
 | `companyName` | Organization name shown in the portal (default: `Your Organization`) |
@@ -99,12 +95,11 @@ In App Service → **Deployment Center**, complete GitHub authorization if promp
 
 ### Step 5 — Grant Managed Identity permissions
 
-The app's **system-assigned managed identity** needs two application permissions (not delegated):
+The app's **system-assigned managed identity** needs one application permission (not delegated):
 
 | API | App role | Purpose |
 |-----|----------|---------|
 | Verified ID Request Service (`3db474b9-6a0c-4840-96ac-1fceb342124f`) | `VerifiableCredential.Create.PresentRequest` | Create presentation requests |
-| Microsoft Graph (`00000003-0000-0000-c000-000000000000`) | `GroupMember.Read.All` | Check IT Helpdesk group membership |
 
 1. Confirm **System assigned identity** is enabled: App Service → **Identity** → **System assigned** → **On**.
 2. Wait about one minute for the identity to propagate.
@@ -139,8 +134,7 @@ Confirm these in App Service → **Configuration** (full list in [`appservice-co
 |---------|---------|
 | `VerifiedID__DidAuthority` | Issuer DID |
 | `VerifiedID__ManagedIdentity` | `true` on Azure |
-| `AppSettings__ITHelpdeskGroupId` | Helpdesk group object ID |
-| `AzureAd__TenantId` / `AzureAd__ClientId` | Agent sign-in |
+| `AzureAd__TenantId` / `AzureAd__ClientId` | Employee sign-in |
 | `APPLICATIONINSIGHTS_CONNECTION_STRING` | Set by ARM template when `enableApplicationInsights` is `true` |
 
 If you skipped Step 2, run `register-agent-app.ps1` now and set `AzureAd__ClientId` manually.
@@ -152,13 +146,13 @@ If you skipped Step 2, run `register-agent-app.ps1` now and set `AzureAd__Client
 1. Open the portal and sign in with your work account
 2. Click **Start Verification**
 3. Scan the QR code with Microsoft Authenticator and share your VerifiedEmployee credential
-4. After group authorization succeeds, copy the caller link and send it to the employee (SMS, email, Teams, etc.)
+4. After verification succeeds, copy the caller link and send it to the other person (SMS, email, Teams, etc.)
 5. Wait for caller verification to complete
 
 ### Caller flow
 
-1. Open the link shared by the agent (`/caller/{sessionId}`)
-2. Confirm the verified agent name and authorization badge
+1. Open the link shared by the initiator (`/caller/{sessionId}`)
+2. Confirm the verified employee name and badge
 3. Scan the QR code and share your VerifiedEmployee credential
 4. See confirmation when verification completes
 
@@ -171,7 +165,7 @@ Set these in App Service configuration — no code changes required:
 | `AppSettings__CompanyName` | `Your Organization` | Header display name |
 | `AppSettings__CompanyLogo` | *(empty)* | Logo URL; hidden when empty |
 | `AppSettings__PortalTitle` | `Verified Helpdesk` | Browser title |
-| `AppSettings__AuthorizedAgentLabel` | `Authorized Helpdesk Agent` | Badge shown to callers |
+| `AppSettings__AuthorizedAgentLabel` | `Verified Employee` | Badge shown to callers |
 | `VerifiedID__client_name` | `Helpdesk Verification` | Verified ID presentation label |
 
 Optional Face Check: set `VerifiedID__EnableFaceCheck` to `true`.
@@ -180,7 +174,7 @@ Optional Face Check: set `VerifiedID__EnableFaceCheck` to `true`.
 
 1. Install [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 2. Copy `appsettings.json` values into User Secrets or `appsettings.Development.json` (gitignored)
-3. For local Verified ID/Graph calls without MSI, set `VerifiedID__ManagedIdentity` to `false` and provide `VerifiedID__TenantId`, `VerifiedID__ClientId`, and `VerifiedID__ClientSecret`
+3. For local Verified ID calls without MSI, set `VerifiedID__ManagedIdentity` to `false` and provide `VerifiedID__TenantId`, `VerifiedID__ClientId`, and `VerifiedID__ClientSecret`
 4. Run:
 
 ```bash
@@ -197,7 +191,6 @@ dotnet run --project VerifiedHelpdesk.csproj
 | MSB3026 / `VerifiedHelpdesk.dll` file in use during deploy | App is running while Kudu publishes directly to `wwwroot` | Pull latest `main` — [`deploy.cmd`](deploy.cmd) publishes to a staging folder, uses `app_offline.htm`, then copies to `wwwroot`. Retry **Sync** in Deployment Center. |
 | Verified ID API 401/403 | MSI permissions missing | Run [`grant-msi-permissions.ps1`](scripts/grant-msi-permissions.ps1) |
 | `Cannot convert value to type System.String` on `ServicePrincipalId` | Old script version, multiple service principals with the same name, or Graph SDK object binding issue | In Cloud Shell, run `git pull` in the repo (or re-clone) to get the latest script. Copy **Object (principal) ID** from App Service → **Identity** and re-run with `-ServicePrincipalId`. In Entra admin center, confirm the enterprise app shows **Managed identity** as the service principal type. |
-| Agent not authorized | User not in helpdesk group | Add agent to IT Helpdesk group; verify `AppSettings__ITHelpdeskGroupId` |
 | Sign-in fails | App registration misconfigured | Verify redirect URI matches `https://<app>.azurewebsites.net/signin-oidc` |
 | Session expired | In-memory cache TTL | Restart verification; increase `AppSettings__CacheExpiresInSeconds` if needed |
 | `Get-MgApplication` / `New-MgApplication`: One or more errors occurred | Hidden inner error (usually module conflict or missing admin consent) | See [App registration script errors](#app-registration-script-errors) below |
@@ -244,7 +237,7 @@ Verified-Helpdesk/
 ├── ARMTemplate/template.json   # Deploy to Azure
 ├── deploy.cmd / .deployment    # Kudu custom deploy
 ├── Controllers/                # Agent, Caller, API, Callback
-├── Services/                   # Session, Graph, Audit, Verified ID
+├── Services/                   # Session, Audit, Verified ID
 ├── scripts/                    # MSI, app registration, and Azure provider helpers
 └── Views/                      # Agent and caller portals
 ```

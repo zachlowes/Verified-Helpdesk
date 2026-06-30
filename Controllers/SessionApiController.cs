@@ -51,7 +51,6 @@ public class SessionApiController : ControllerBase
             phase = session.Phase,
             agentDisplayName = session.AgentDisplayName,
             agentUpn = session.AgentUpn,
-            agentAuthorized = session.AgentAuthorized,
             userDisplayName = session.UserDisplayName,
             userUpn = session.UserUpn,
             userMail = session.UserMail,

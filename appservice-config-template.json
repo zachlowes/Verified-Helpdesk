@@ -21,12 +21,7 @@
   },
   {
     "name": "AppSettings__AuthorizedAgentLabel",
-    "value": "Authorized Helpdesk Agent",
-    "slotSetting": false
-  },
-  {
-    "name": "AppSettings__ITHelpdeskGroupId",
-    "value": "<your-it-helpdesk-group-object-id>",
+    "value": "Verified Employee",
     "slotSetting": false
   },
   {

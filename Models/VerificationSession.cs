@@ -20,7 +20,6 @@ public class VerificationSession
     public string Phase { get; set; } = VerificationPhases.Agent;
     public string? AgentUpn { get; set; }
     public string? AgentDisplayName { get; set; }
-    public bool? AgentAuthorized { get; set; }
     public string? UserUpn { get; set; }
     public string? UserDisplayName { get; set; }
     public string? UserMail { get; set; }

@@ -33,7 +33,6 @@ public class Program
             .AddMicrosoftIdentityUI();
 
         builder.Services.AddScoped<SessionService>();
-        builder.Services.AddScoped<GraphAuthorizationService>();
         builder.Services.AddScoped<AuditService>();
         builder.Services.AddScoped<VerifiedIdPresentationService>();
         builder.Services.AddScoped<VerificationCallbackService>();

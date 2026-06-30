@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Grants the App Service managed identity permissions for Verified ID and Microsoft Graph.
+    Grants the App Service managed identity permissions for Verified ID.
 
 .PARAMETER TenantId
     Entra ID tenant ID.
@@ -33,7 +33,6 @@ param(
 $ErrorActionPreference = "Stop"
 
 $VerifiedIdAppId = "3db474b9-6a0c-4840-96ac-1fceb342124f"
-$GraphAppId = "00000003-0000-0000-c000-000000000000"
 
 function ConvertTo-GraphId {
     param(
@@ -204,11 +203,5 @@ $vid = Get-GraphServicePrincipalByAppId -Description "Verified ID Request Servic
 $vidId = ConvertTo-GraphId $vid.id "Verified ID service principal ID"
 $vidRole = Get-GraphAppRoleId -ServicePrincipal $vid -RoleValue "VerifiableCredential.Create.PresentRequest" -ApiName "Verified ID Request Service"
 Add-GraphAppRoleAssignment -ManagedIdentityId $msiId -ResourceId $vidId -AppRoleId $vidRole -PermissionLabel "VerifiableCredential.Create.PresentRequest"
-
-Write-Host "Assigning Microsoft Graph GroupMember.Read.All permission..."
-$graph = Get-GraphServicePrincipalByAppId -Description "Microsoft Graph" -AppId $GraphAppId
-$graphId = ConvertTo-GraphId $graph.id "Microsoft Graph service principal ID"
-$graphRole = Get-GraphAppRoleId -ServicePrincipal $graph -RoleValue "GroupMember.Read.All" -ApiName "Microsoft Graph"
-Add-GraphAppRoleAssignment -ManagedIdentityId $msiId -ResourceId $graphId -AppRoleId $graphRole -PermissionLabel "GroupMember.Read.All"
 
 Write-Host "Permissions assigned successfully for '$AppName'."

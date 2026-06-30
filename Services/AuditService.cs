@@ -19,7 +19,6 @@ public class AuditService
             ["sessionId"] = session.SessionId,
             ["agentUpn"] = session.AgentUpn ?? string.Empty,
             ["agentDisplayName"] = session.AgentDisplayName ?? string.Empty,
-            ["agentAuthorized"] = (session.AgentAuthorized ?? false).ToString(),
             ["userUpn"] = session.UserUpn ?? string.Empty,
             ["userDisplayName"] = session.UserDisplayName ?? string.Empty,
             ["userMail"] = session.UserMail ?? string.Empty,
