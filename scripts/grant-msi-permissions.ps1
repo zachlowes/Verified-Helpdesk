@@ -35,40 +35,123 @@ $ErrorActionPreference = "Stop"
 $VerifiedIdAppId = "3db474b9-6a0c-4840-96ac-1fceb342124f"
 $GraphAppId = "00000003-0000-0000-c000-000000000000"
 
-function Get-SingleServicePrincipal {
+function ConvertTo-GraphId {
+    param(
+        [object]$Value,
+        [string]$Label
+    )
+
+    if ($null -eq $Value) {
+        throw "$Label is null."
+    }
+
+    if ($Value -is [System.Collections.IEnumerable] -and $Value -isnot [string]) {
+        $items = @($Value | Where-Object { $null -ne $_ })
+        if ($items.Count -eq 0) {
+            throw "$Label is null."
+        }
+        if ($items.Count -gt 1) {
+            $joined = ($items | ForEach-Object { $_.ToString() }) -join ", "
+            throw "$Label resolved to multiple values: $joined"
+        }
+        $Value = $items[0]
+    }
+
+    $text = if ($Value -is [string]) { $Value.Trim() } else { $Value.ToString().Trim() }
+    if ($text -notmatch '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$') {
+        throw "$Label is not a valid GUID: '$text'"
+    }
+
+    return $text.ToLower()
+}
+
+function Get-GraphServicePrincipalsByFilter {
     param(
         [string]$Description,
         [string]$Filter
     )
 
-    $results = @(Get-MgServicePrincipal -Filter $Filter)
+    $uri = "v1.0/servicePrincipals?`$filter=$([uri]::EscapeDataString($Filter))"
+    $response = Invoke-MgGraphRequest -Method GET -Uri $uri
+    $results = @($response.value | Where-Object { $null -ne $_ })
+
     if ($results.Count -eq 0) {
         throw "$Description not found (filter: $Filter)."
     }
     if ($results.Count -gt 1) {
-        $ids = ($results | ForEach-Object { $_.Id }) -join ", "
+        $ids = ($results | ForEach-Object { $_.id }) -join ", "
         throw "$Description returned $($results.Count) matches. Pass -ServicePrincipalId with the Object ID from App Service -> Identity. Matching IDs: $ids"
     }
 
     return $results[0]
 }
 
-function Get-AppRoleId {
+function Get-GraphServicePrincipalByAppId {
+    param(
+        [string]$Description,
+        [string]$AppId
+    )
+
+    try {
+        return Invoke-MgGraphRequest -Method GET -Uri "v1.0/servicePrincipals(appId='$AppId')"
+    }
+    catch {
+        throw "$Description not found for appId '$AppId'. $($_.Exception.Message)"
+    }
+}
+
+function Get-GraphAppRoleId {
     param(
         [object]$ServicePrincipal,
         [string]$RoleValue,
         [string]$ApiName
     )
 
-    $role = @($ServicePrincipal.AppRoles | Where-Object { $_.Value -eq $RoleValue })[0]
-    if (-not $role -or -not $role.Id) {
+    $roles = @(
+        $ServicePrincipal.appRoles |
+            Where-Object { $_.value -eq $RoleValue -and $_.allowedMemberTypes -contains "Application" }
+    )
+
+    if ($roles.Count -eq 0) {
         throw "App role '$RoleValue' not found on $ApiName service principal."
     }
+    if ($roles.Count -gt 1) {
+        throw "App role '$RoleValue' matched multiple roles on $ApiName service principal."
+    }
 
-    return [string]$role.Id
+    return ConvertTo-GraphId $roles[0].id "App role ID for $RoleValue"
 }
 
-if (-not (Get-Module -ListAvailable -Name Microsoft.Graph.Applications)) {
+function Add-GraphAppRoleAssignment {
+    param(
+        [string]$ManagedIdentityId,
+        [string]$ResourceId,
+        [string]$AppRoleId,
+        [string]$PermissionLabel
+    )
+
+    $body = @{
+        principalId = $ManagedIdentityId
+        resourceId  = $ResourceId
+        appRoleId   = $AppRoleId
+    }
+
+    try {
+        Invoke-MgGraphRequest -Method POST -Uri "v1.0/servicePrincipals/$ManagedIdentityId/appRoleAssignments" -Body $body | Out-Null
+        Write-Host "  Assigned $PermissionLabel."
+    }
+    catch {
+        $message = $_.Exception.Message
+        if ($message -match 'Permission being assigned already exists|Authorization_RequestDenied.*already exists') {
+            Write-Host "  $PermissionLabel already assigned, skipping."
+            return
+        }
+
+        throw "Failed to assign $PermissionLabel. $message"
+    }
+}
+
+if (-not (Get-Module -ListAvailable -Name Microsoft.Graph.Authentication)) {
     throw "Microsoft.Graph module not found. Install it with: Install-Module Microsoft.Graph -Scope CurrentUser"
 }
 
@@ -83,7 +166,6 @@ if ($duplicateModules) {
 }
 
 Import-Module Microsoft.Graph.Authentication -ErrorAction Stop
-Import-Module Microsoft.Graph.Applications -ErrorAction Stop
 
 Write-Host "Connecting to Microsoft Graph..."
 Connect-MgGraph -TenantId $TenantId -Scopes "Application.Read.All", "AppRoleAssignment.ReadWrite.All" -NoWelcome
@@ -104,38 +186,29 @@ foreach ($scope in $requiredScopes) {
 
 if ($ServicePrincipalId) {
     Write-Host "Using provided service principal ID..."
-    $msi = Get-MgServicePrincipal -ServicePrincipalId $ServicePrincipalId
-    if (-not $msi) {
-        throw "Service principal '$ServicePrincipalId' not found."
-    }
-    $msiId = [string]$msi.Id
+    $msiId = ConvertTo-GraphId $ServicePrincipalId "Service principal ID"
+    $null = Invoke-MgGraphRequest -Method GET -Uri "v1.0/servicePrincipals/$msiId"
 }
 else {
     Write-Host "Looking up managed identity for '$AppName'..."
     $escapedAppName = $AppName.Replace("'", "''")
     $filter = "displayName eq '$escapedAppName' and servicePrincipalType eq 'ManagedIdentity'"
-    $msi = Get-SingleServicePrincipal -Description "Managed identity for app '$AppName'" -Filter $filter
-    $msiId = [string]$msi.Id
-}
-
-if (-not $msiId) {
-    throw "Managed identity service principal has no object ID. Enable System assigned identity on the App Service, wait about one minute, then retry."
+    $msi = Get-GraphServicePrincipalsByFilter -Description "Managed identity for app '$AppName'" -Filter $filter
+    $msiId = ConvertTo-GraphId $msi.id "Managed identity object ID"
 }
 
 Write-Host "Managed identity object ID: $msiId"
 
 Write-Host "Assigning Verified ID permission..."
-$vid = Get-SingleServicePrincipal -Description "Verified ID Request Service" -Filter "appId eq '$VerifiedIdAppId'"
-$vidId = [string]$vid.Id
-$vidRole = Get-AppRoleId -ServicePrincipal $vid -RoleValue "VerifiableCredential.Create.PresentRequest" -ApiName "Verified ID Request Service"
-New-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $msiId `
-    -PrincipalId $msiId -ResourceId $vidId -AppRoleId $vidRole | Out-Null
+$vid = Get-GraphServicePrincipalByAppId -Description "Verified ID Request Service" -AppId $VerifiedIdAppId
+$vidId = ConvertTo-GraphId $vid.id "Verified ID service principal ID"
+$vidRole = Get-GraphAppRoleId -ServicePrincipal $vid -RoleValue "VerifiableCredential.Create.PresentRequest" -ApiName "Verified ID Request Service"
+Add-GraphAppRoleAssignment -ManagedIdentityId $msiId -ResourceId $vidId -AppRoleId $vidRole -PermissionLabel "VerifiableCredential.Create.PresentRequest"
 
 Write-Host "Assigning Microsoft Graph GroupMember.Read.All permission..."
-$graph = Get-SingleServicePrincipal -Description "Microsoft Graph" -Filter "appId eq '$GraphAppId'"
-$graphId = [string]$graph.Id
-$graphRole = Get-AppRoleId -ServicePrincipal $graph -RoleValue "GroupMember.Read.All" -ApiName "Microsoft Graph"
-New-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $msiId `
-    -PrincipalId $msiId -ResourceId $graphId -AppRoleId $graphRole | Out-Null
+$graph = Get-GraphServicePrincipalByAppId -Description "Microsoft Graph" -AppId $GraphAppId
+$graphId = ConvertTo-GraphId $graph.id "Microsoft Graph service principal ID"
+$graphRole = Get-GraphAppRoleId -ServicePrincipal $graph -RoleValue "GroupMember.Read.All" -ApiName "Microsoft Graph"
+Add-GraphAppRoleAssignment -ManagedIdentityId $msiId -ResourceId $graphId -AppRoleId $graphRole -PermissionLabel "GroupMember.Read.All"
 
 Write-Host "Permissions assigned successfully for '$AppName'."
