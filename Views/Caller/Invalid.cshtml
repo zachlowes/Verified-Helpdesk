@@ -1,0 +1,11 @@
+@{
+    ViewData["Title"] = "Verification Session";
+    Layout = "_Layout";
+}
+
+<div class="text-center">
+    <h1>Verification Session</h1>
+    <div class="alert alert-warning">
+        @(ViewData["ErrorMessage"] ?? "This verification session is invalid or has expired.")
+    </div>
+</div>

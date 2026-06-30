@@ -1,0 +1,200 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "webAppName": {
+      "type": "string",
+      "minLength": 2,
+      "metadata": {
+        "description": "Globally unique App Service name (becomes https://<name>.azurewebsites.net)."
+      }
+    },
+    "repoURL": {
+      "type": "string",
+      "defaultValue": "https://github.com/zlowes/Verified-Helpdesk.git",
+      "metadata": {
+        "description": "GitHub repository URL for this application."
+      }
+    },
+    "branch": {
+      "type": "string",
+      "defaultValue": "main",
+      "metadata": {
+        "description": "GitHub branch to deploy."
+      }
+    },
+    "DidAuthority": {
+      "type": "string",
+      "metadata": {
+        "description": "Your Entra Verified ID issuer DID."
+      }
+    },
+    "ITHelpdeskGroupId": {
+      "type": "string",
+      "metadata": {
+        "description": "Object ID of the IT Helpdesk security group used for agent authorization."
+      }
+    },
+    "AzureAdTenantId": {
+      "type": "string",
+      "metadata": {
+        "description": "Entra ID tenant ID for agent sign-in."
+      }
+    },
+    "AzureAdClientId": {
+      "type": "string",
+      "metadata": {
+        "description": "App registration client ID for agent sign-in (redirect URI: https://<webAppName>.azurewebsites.net/signin-oidc)."
+      }
+    },
+    "companyName": {
+      "type": "string",
+      "defaultValue": "Your Organization",
+      "metadata": {
+        "description": "Display name shown in the portal header."
+      }
+    }
+  },
+  "variables": {
+    "appServicePlanName": "[concat(parameters('webAppName'), '-plan')]",
+    "appInsightsName": "[concat(parameters('webAppName'), '-ai')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2020-02-02",
+      "name": "[variables('appInsightsName')]",
+      "location": "[resourceGroup().location]",
+      "kind": "web",
+      "properties": {
+        "Application_Type": "web"
+      }
+    },
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2020-06-01",
+      "name": "[variables('appServicePlanName')]",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "B1",
+        "tier": "Basic",
+        "size": "B1",
+        "family": "B",
+        "capacity": 1
+      },
+      "kind": "app",
+      "properties": {
+        "reserved": false
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2022-09-01",
+      "name": "[parameters('webAppName')]",
+      "location": "[resourceGroup().location]",
+      "kind": "app",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
+        "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]"
+      ],
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
+        "httpsOnly": true,
+        "siteConfig": {
+          "alwaysOn": true,
+          "netFrameworkVersion": "v8.0",
+          "appSettings": [
+            {
+              "name": "SCM_COMMAND_IDLE_TIMEOUT",
+              "value": "600"
+            },
+            {
+              "name": "SCM_DO_BUILD_DURING_DEPLOYMENT",
+              "value": "true"
+            },
+            {
+              "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+              "value": "[reference(resourceId('Microsoft.Insights/components', variables('appInsightsName'))).ConnectionString]"
+            },
+            {
+              "name": "VerifiedID__DidAuthority",
+              "value": "[parameters('DidAuthority')]"
+            },
+            {
+              "name": "VerifiedID__ManagedIdentity",
+              "value": "true"
+            },
+            {
+              "name": "VerifiedID__EnableFaceCheck",
+              "value": "false"
+            },
+            {
+              "name": "AppSettings__ITHelpdeskGroupId",
+              "value": "[parameters('ITHelpdeskGroupId')]"
+            },
+            {
+              "name": "AppSettings__CompanyName",
+              "value": "[parameters('companyName')]"
+            },
+            {
+              "name": "AppSettings__PortalTitle",
+              "value": "Verified Helpdesk"
+            },
+            {
+              "name": "AppSettings__AuthorizedAgentLabel",
+              "value": "Authorized Helpdesk Agent"
+            },
+            {
+              "name": "AppSettings__UseTeamsWebhook",
+              "value": "false"
+            },
+            {
+              "name": "AzureAd__TenantId",
+              "value": "[parameters('AzureAdTenantId')]"
+            },
+            {
+              "name": "AzureAd__ClientId",
+              "value": "[parameters('AzureAdClientId')]"
+            },
+            {
+              "name": "AzureAd__Instance",
+              "value": "https://login.microsoftonline.com/"
+            },
+            {
+              "name": "AzureAd__CallbackPath",
+              "value": "/signin-oidc"
+            }
+          ]
+        }
+      },
+      "resources": [
+        {
+          "type": "sourcecontrols",
+          "apiVersion": "2018-02-01",
+          "name": "web",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/sites', parameters('webAppName'))]"
+          ],
+          "properties": {
+            "repoUrl": "[parameters('repoURL')]",
+            "branch": "[parameters('branch')]",
+            "isManualIntegration": true
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": {
+    "webAppUrl": {
+      "type": "string",
+      "value": "[concat('https://', parameters('webAppName'), '.azurewebsites.net')]"
+    },
+    "applicationInsightsName": {
+      "type": "string",
+      "value": "[variables('appInsightsName')]"
+    }
+  }
+}

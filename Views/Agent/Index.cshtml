@@ -1,0 +1,128 @@
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+@{
+    ViewData["Title"] = Configuration.GetValue("AppSettings:PortalTitle", "Verified Helpdesk");
+    Layout = "_Layout";
+}
+
+<div class="text-center">
+    <h1>Verification Portal</h1>
+    <p class="lead">Start a bidirectional identity verification session with a caller.</p>
+
+    <div id="message-wrapper" class="my-4">
+        <div id="message" class="alert alert-info d-none"></div>
+    </div>
+
+    <div id="step-start" class="verification-card card p-4 mb-4">
+        <h2 class="h4">Step 1: Start session</h2>
+        <p>Sign in with your work account, then start a new verification session.</p>
+        <button type="button" id="start-session" class="btn btn-primary">Start Verification</button>
+    </div>
+
+    <div id="step-agent" class="verification-card card p-4 mb-4 d-none">
+        <h2 class="h4">Step 2: Verify yourself</h2>
+        <p>Present your VerifiedEmployee credential from Microsoft Authenticator.</p>
+        <div id="agent-qrcode" class="d-flex justify-content-center my-3"></div>
+        <p id="agent-status" class="text-muted">Waiting for your verification...</p>
+    </div>
+
+    <div id="step-caller-link" class="verification-card card p-4 mb-4 d-none">
+        <h2 class="h4">Step 3: Send link to caller</h2>
+        <p class="text-success fw-semibold">You are verified — @ViewData["AuthorizedAgentLabel"]</p>
+        <p>Name: <span id="verified-agent-name"></span></p>
+        <p>Share this link with the caller:</p>
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" id="caller-link" readonly />
+            <button class="btn btn-outline-secondary" type="button" id="copy-link">Copy</button>
+        </div>
+        <p id="user-status" class="text-muted">Waiting for caller verification...</p>
+    </div>
+
+    <div id="step-complete" class="verification-card card p-4 mb-4 d-none">
+        <h2 class="h4">Verification complete</h2>
+        <ul class="list-unstyled">
+            <li>Caller: <span id="verified-user-name"></span></li>
+            <li>Email: <span id="verified-user-mail"></span></li>
+        </ul>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/qrcode.min.js"></script>
+    <script src="~/js/verifiedid.requestservice.client.js"></script>
+    <script>
+        let sessionId = null;
+        let pollTimer = null;
+        const agentQr = new QRCode(document.getElementById("agent-qrcode"), { width: 180, height: 180 });
+
+        function showMessage(text, type = "info") {
+            const el = document.getElementById("message");
+            el.className = `alert alert-${type}`;
+            el.textContent = text;
+            el.classList.remove("d-none");
+        }
+
+        function showStep(step) {
+            ["step-start", "step-agent", "step-caller-link", "step-complete"].forEach(id => {
+                document.getElementById(id).classList.add("d-none");
+            });
+            if (step) document.getElementById(step).classList.remove("d-none");
+        }
+
+        async function startSession() {
+            const response = await fetch("/api/session/start", { method: "POST" });
+            if (!response.ok) {
+                showMessage("Unable to start session. Ensure you are signed in.", "danger");
+                return;
+            }
+            const data = await response.json();
+            sessionId = data.sessionId;
+            showStep("step-agent");
+            await startAgentPresentation();
+        }
+
+        async function startAgentPresentation() {
+            const response = await fetch(`/api/verifier/presentation-request?sessionId=${sessionId}&phase=agent`);
+            const payload = await response.json();
+            if (!response.ok) {
+                showMessage(payload.error_description || "Failed to create presentation request.", "danger");
+                return;
+            }
+            agentQr.makeCode(payload.url);
+            pollSessionStatus();
+        }
+
+        function pollSessionStatus() {
+            if (pollTimer) clearInterval(pollTimer);
+            pollTimer = setInterval(async () => {
+                const response = await fetch(`/api/session/${sessionId}/status`);
+                if (!response.ok) return;
+                const data = await response.json();
+
+                if (data.status === "agent_verified") {
+                    document.getElementById("verified-agent-name").textContent = data.agentDisplayName || data.agentUpn;
+                    document.getElementById("caller-link").value = `${window.location.origin}/caller/${sessionId}`;
+                    document.getElementById("agent-status").textContent = "Agent verification complete.";
+                    showStep("step-caller-link");
+                } else if (data.status === "complete") {
+                    document.getElementById("verified-user-name").textContent = data.userDisplayName || data.userUpn;
+                    document.getElementById("verified-user-mail").textContent = data.userMail || data.userUpn;
+                    showStep("step-complete");
+                    clearInterval(pollTimer);
+                } else if (data.status === "failed") {
+                    showMessage(data.failureReason || "Verification failed.", "danger");
+                    clearInterval(pollTimer);
+                }
+            }, 2000);
+        }
+
+        document.getElementById("start-session").addEventListener("click", startSession);
+        document.getElementById("copy-link").addEventListener("click", () => {
+            const input = document.getElementById("caller-link");
+            input.select();
+            navigator.clipboard.writeText(input.value);
+        });
+
+        showStep("step-start");
+    </script>
+}

@@ -1,0 +1,46 @@
+﻿@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - @Configuration.GetValue("AppSettings:PortalTitle", "Verified Helpdesk")</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-light bg-light border-bottom box-shadow mb-3">
+            <div class="container">
+                <a class="navbar-brand d-flex align-items-center gap-2" asp-controller="Agent" asp-action="Index">
+                    @{
+                        var logoUrl = Configuration.GetValue<string>("AppSettings:CompanyLogo");
+                        var companyName = Configuration.GetValue("AppSettings:CompanyName", "Your Organization");
+                    }
+                    @if (!string.IsNullOrWhiteSpace(logoUrl))
+                    {
+                        <img style="max-height:40px" src="@logoUrl" alt="@companyName logo" />
+                    }
+                    <span>@companyName</span>
+                </a>
+                <partial name="_LoginPartial" />
+            </div>
+        </nav>
+    </header>
+    <div class="container pb-4">
+        <main role="main">
+            @RenderBody()
+        </main>
+    </div>
+    <footer class="border-top footer text-muted py-3">
+        <div class="container">
+            Verification state is held in memory only for the duration of a session. No credential data is persisted by this application.
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,94 @@
+@model VerifiedHelpdesk.Models.VerificationSession
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+@{
+    ViewData["Title"] = Configuration.GetValue("AppSettings:PortalTitle", "Verified Helpdesk");
+    Layout = "_Layout";
+    var sessionId = ViewData["SessionId"] as string ?? Model.SessionId;
+}
+
+<div class="text-center">
+    <h1>Identity Verification</h1>
+
+    @if (Model.Status == VerificationStatuses.Complete)
+    {
+        <div class="card p-4 mb-4">
+            <h2 class="h4 text-success">Verification complete</h2>
+            <p>This verification session has already been completed.</p>
+        </div>
+    }
+    else
+    {
+    <div class="card p-4 mb-4">
+        <p class="text-success fw-semibold mb-1">@ViewData["AuthorizedAgentLabel"]</p>
+        <p class="mb-0">Agent: <strong>@ViewData["AgentDisplayName"]</strong></p>
+    </div>
+
+    <div id="message-wrapper" class="my-3">
+        <div id="message" class="alert alert-info d-none"></div>
+    </div>
+
+    <div id="step-user" class="card p-4 mb-4">
+        <h2 class="h4">Verify your identity</h2>
+        <p>Present your VerifiedEmployee credential from Microsoft Authenticator to continue.</p>
+        <div id="user-qrcode" class="d-flex justify-content-center my-3"></div>
+        <p id="user-status" class="text-muted">Preparing verification request...</p>
+        <a id="check-result" class="btn btn-link d-none">Continue</a>
+    </div>
+
+    <div id="step-complete" class="card p-4 mb-4 d-none">
+        <h2 class="h4 text-success">Verification complete</h2>
+        <p>Your identity has been verified. You may continue your support call with the agent.</p>
+    </div>
+    }
+</div>
+
+@section Scripts {
+    @if (Model.Status != VerificationStatuses.Complete)
+    {
+    <script src="~/js/qrcode.min.js"></script>
+    <script src="~/js/verifiedid.requestservice.client.js"></script>
+    <script>
+        const sessionId = "@sessionId";
+        const userQr = new QRCode(document.getElementById("user-qrcode"), { width: 180, height: 180 });
+        let pollTimer = null;
+
+        function showMessage(text, type = "info") {
+            const el = document.getElementById("message");
+            el.className = `alert alert-${type}`;
+            el.textContent = text;
+            el.classList.remove("d-none");
+        }
+
+        async function startUserPresentation() {
+            const response = await fetch(`/api/verifier/presentation-request?sessionId=${sessionId}&phase=user`);
+            const payload = await response.json();
+            if (!response.ok) {
+                showMessage(payload.error_description || "Failed to create presentation request.", "danger");
+                return;
+            }
+            userQr.makeCode(payload.url);
+            document.getElementById("user-status").textContent = "Scan the QR code with Microsoft Authenticator.";
+            pollSessionStatus();
+        }
+
+        function pollSessionStatus() {
+            pollTimer = setInterval(async () => {
+                const response = await fetch(`/api/session/${sessionId}/status`);
+                if (!response.ok) return;
+                const data = await response.json();
+                if (data.status === "complete") {
+                    document.getElementById("step-user").classList.add("d-none");
+                    document.getElementById("step-complete").classList.remove("d-none");
+                    clearInterval(pollTimer);
+                } else if (data.status === "failed") {
+                    showMessage(data.failureReason || "Verification failed.", "danger");
+                    clearInterval(pollTimer);
+                }
+            }, 2000);
+        }
+
+        startUserPresentation();
+    </script>
+    }
+}
