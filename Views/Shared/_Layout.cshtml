@@ -1,5 +1,9 @@
 ﻿@using Microsoft.Extensions.Configuration
 @inject IConfiguration Configuration
+@{
+    var logoUrl = Configuration.GetValue<string>("AppSettings:CompanyLogo");
+    var companyName = Configuration.GetValue("AppSettings:CompanyName", "Your Organization");
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,10 +18,6 @@
         <nav class="navbar navbar-expand-sm portal-navbar border-bottom box-shadow">
             <div class="container">
                 <a class="navbar-brand d-flex align-items-center gap-2" asp-controller="Agent" asp-action="Index">
-                    @{
-                        var logoUrl = Configuration.GetValue<string>("AppSettings:CompanyLogo");
-                        var companyName = Configuration.GetValue("AppSettings:CompanyName", "Your Organization");
-                    }
                     @if (!string.IsNullOrWhiteSpace(logoUrl))
                     {
                         <img style="max-height:40px" src="@logoUrl" alt="@companyName logo" />
