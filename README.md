@@ -179,8 +179,40 @@ dotnet run --project VerifiedHelpdesk.csproj
 | Agent not authorized | User not in helpdesk group | Add agent to IT Helpdesk group; verify `AppSettings__ITHelpdeskGroupId` |
 | Sign-in fails | App registration misconfigured | Verify redirect URI matches `https://<app>.azurewebsites.net/signin-oidc` |
 | Session expired | In-memory cache TTL | Restart verification; increase `AppSettings__CacheExpiresInSeconds` if needed |
+| `Get-MgApplication` / `New-MgApplication`: One or more errors occurred | Hidden inner error (usually module conflict or missing admin consent) | See [App registration script errors](#app-registration-script-errors) below |
 
 View logs: App Service → **Log stream**, or Application Insights → **Logs** (query `customEvents` for `VerificationCompleted` / `VerificationFailed`).
+
+### App registration script errors
+
+If [`register-agent-app.ps1`](scripts/register-agent-app.ps1) fails with `Get-MgApplication` or `New-MgApplication: One or more errors occurred`, the script prints the underlying Graph error and suggested fix. Re-run the script to see the detailed message.
+
+**Important:** Run the script in a **fresh PowerShell window**. Do not import Exchange Online or PnP modules in the same session before Graph — they conflict with Microsoft.Graph and cause opaque AggregateException errors on every Graph cmdlet.
+
+For manual diagnosis in the same PowerShell session after a failure:
+
+```powershell
+Get-Error | Format-List * -Force
+# or
+$Error[0].Exception.InnerExceptions | ForEach-Object { $_.Message }
+```
+
+Common causes and fixes:
+
+| Inner error | Fix |
+|-------------|-----|
+| `Authorization_RequestDenied` / `Insufficient privileges` | Sign in with **Cloud Application Administrator** or **Global Administrator**. Accept admin consent for `Application.ReadWrite.All` during `Connect-MgGraph`. If tenant policy blocks user app registration, use an admin account or create the app manually in Entra admin center. |
+| `Could not load file or assembly` / `TypeLoadException` | Multiple Microsoft.Graph module versions conflict. Uninstall all `Microsoft.Graph*` modules, reinstall in a fresh PowerShell window: `Install-Module Microsoft.Graph -Scope CurrentUser -Force`. Do not import Exchange Online or PnP modules in the same session before Graph. |
+| App already exists | The script detects an existing registration by display name and prints the client ID. Confirm the redirect URI under **Authentication** in Entra admin center. |
+
+**Manual fallback** (same result as the script):
+
+1. Entra admin center → **Applications** → **App registrations** → **New registration**
+2. Name: your app name (e.g. `Verified Helpdesk Portal`)
+3. Supported account types: **Accounts in this organizational directory only**
+4. Redirect URI: **Web** → `https://<webAppName>.azurewebsites.net/signin-oidc`
+5. After creation: **Authentication** → **Implicit grant** → enable **ID tokens**
+6. Copy the **Application (client) ID** for `AzureAdClientId` in the ARM deploy
 
 **Why this repo deploys when the upstream sample does not:** The Microsoft monorepo uses a root `.deployment` file that runs `cd %PROJECT% && deploy.cmd`, but the `6-woodgrove-helpdesk` subfolder has no `deploy.cmd`. Kudu fails with `'deploy.cmd' is not recognized as an internal or external command`. This repository is a **standalone app at the repo root** with its own [`deploy.cmd`](deploy.cmd) and [`.deployment`](.deployment) file — no `PROJECT` subfolder required.
 
