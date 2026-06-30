@@ -10,8 +10,6 @@ This repository is hosted on **GitHub**. All commits must use:
 - **Name:** zachlowes
 - **Email:** zlowes@live.com
 
-Do **not** use Softboat or softboat@proton.me here — that identity is reserved for GitLab repos.
-
 When committing, set author via environment variables (do not change global git config):
 
 ```powershell
