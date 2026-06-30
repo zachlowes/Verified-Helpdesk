@@ -118,9 +118,18 @@ cd Verified-Helpdesk
 .\scripts\grant-msi-permissions.ps1 -TenantId "<your-tenant-id>" -AppName "<webAppName>"
 ```
 
+If display-name lookup finds zero or multiple service principals, pass the **Object (principal) ID** from App Service → **Identity**:
+
+```powershell
+.\scripts\grant-msi-permissions.ps1 `
+  -TenantId "<your-tenant-id>" `
+  -AppName "<webAppName>" `
+  -ServicePrincipalId "<object-id-from-identity-blade>"
+```
+
 Requires `Install-Module Microsoft.Graph` if not already installed.
 
-4. Verify assignments in **Entra admin center → Enterprise applications** — search for your App Service name and open **Permissions**.
+4. Verify assignments in **Entra admin center → Enterprise applications** — search for your App Service name and open **Permissions**. Confirm **Service principal type** is **Managed identity**.
 
 ### Step 6 — Verify app settings
 
@@ -186,6 +195,7 @@ dotnet run --project VerifiedHelpdesk.csproj
 | Default Azure placeholder page | Deploy failed | Check Deployment Center logs; confirm `deploy.cmd` exists at repo root |
 | `deploy.cmd` not recognized | Monorepo `.deployment` without local `deploy.cmd` | Use this standalone repo, not the upstream subfolder (see note below) |
 | Verified ID API 401/403 | MSI permissions missing | Run [`grant-msi-permissions.ps1`](scripts/grant-msi-permissions.ps1) |
+| `Cannot convert value to type System.String` on `ServicePrincipalId` | Multiple service principals share the App Service name, or lookup returned an ambiguous result | Copy **Object (principal) ID** from App Service → **Identity** and re-run with `-ServicePrincipalId`. In Entra admin center, confirm the enterprise app shows **Managed identity** as the service principal type. |
 | Agent not authorized | User not in helpdesk group | Add agent to IT Helpdesk group; verify `AppSettings__ITHelpdeskGroupId` |
 | Sign-in fails | App registration misconfigured | Verify redirect URI matches `https://<app>.azurewebsites.net/signin-oidc` |
 | Session expired | In-memory cache TTL | Restart verification; increase `AppSettings__CacheExpiresInSeconds` if needed |
