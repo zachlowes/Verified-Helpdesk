@@ -1,0 +1,31 @@
+---
+description: Git commit author identity for this GitHub repository
+alwaysApply: true
+---
+
+# Git author (GitHub)
+
+This repository is hosted on **GitHub**. All commits must use:
+
+- **Name:** zachlowes
+- **Email:** zlowes@live.com
+
+Do **not** use Softboat or softboat@proton.me here — that identity is reserved for GitLab repos.
+
+When committing, set author via environment variables (do not change global git config):
+
+```powershell
+$env:GIT_AUTHOR_NAME='zachlowes'
+$env:GIT_AUTHOR_EMAIL='zlowes@live.com'
+$env:GIT_COMMITTER_NAME='zachlowes'
+$env:GIT_COMMITTER_EMAIL='zlowes@live.com'
+```
+
+```bash
+export GIT_AUTHOR_NAME='zachlowes'
+export GIT_AUTHOR_EMAIL='zlowes@live.com'
+export GIT_COMMITTER_NAME='zachlowes'
+export GIT_COMMITTER_EMAIL='zlowes@live.com'
+```
+
+Or pass `--author="zachlowes <zlowes@live.com>"` on `git commit`.
