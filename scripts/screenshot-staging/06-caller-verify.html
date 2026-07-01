@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verified Helpdesk - Contoso</title>
+  <link rel="stylesheet" href="/wwwroot/lib/bootstrap/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="/wwwroot/css/site.css" />
+</head>
+<body>
+  <header>
+    <nav class="navbar navbar-expand-sm portal-navbar border-bottom box-shadow">
+      <div class="container">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="#"><span>Contoso</span></a>
+      </div>
+    </nav>
+  </header>
+  <div class="portal-page">
+    <main role="main">
+      <div class="portal-hero">
+        <h1>Identity Verification</h1>
+        <p class="lead">Verify your identity to continue your support call.</p>
+      </div>
+      <div class="portal-content">
+        <div class="portal-panel">
+          <p class="portal-badge">Verified Employee</p>
+          <p class="mb-0">Agent: <strong>Alex Morgan</strong></p>
+        </div>
+        <div class="portal-panel">
+          <div class="portal-step-header">
+            <h2>Verify your identity</h2>
+            <p>Present your VerifiedEmployee credential from Microsoft Authenticator to continue.</p>
+          </div>
+          <div id="user-qrcode" class="qrcode-container"></div>
+          <p class="portal-status">Scan the QR code with Microsoft Authenticator.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="portal-footer">
+    <div class="container">&copy; 2026 Contoso</div>
+  </footer>
+  <script src="/wwwroot/js/qrcode.min.js"></script>
+  <script>new QRCode(document.getElementById("user-qrcode"), { width: 180, height: 180 }).makeCode("https://verify.example/demo");</script>
+</body>
+</html>

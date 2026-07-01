@@ -14,6 +14,56 @@ Based on the Microsoft [`6-woodgrove-helpdesk`](https://github.com/Azure-Samples
 - Configurable organization branding via app settings
 - Face Check optional (disabled by default)
 
+## How it works
+
+A complete verification session walks the employee through four portal steps, then the caller through three steps on the shared link. Screenshots below use demo data (Contoso / fictional names).
+
+### Employee portal
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="ReadmeFiles/demo-01-agent-start.png" alt="Agent step 1: start session" width="420" />
+      <br /><b>1. Start session</b><br /><sub>Sign in and start a new verification session</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="ReadmeFiles/demo-02-agent-verify.png" alt="Agent step 2: verify yourself" width="420" />
+      <br /><b>2. Verify yourself</b><br /><sub>Present VerifiedEmployee via Microsoft Authenticator</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="ReadmeFiles/demo-03-agent-share-link.png" alt="Agent step 3: send link to caller" width="420" />
+      <br /><b>3. Send link to caller</b><br /><sub>Copy the caller URL and share it out of band</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="ReadmeFiles/demo-04-agent-complete.png" alt="Agent step 4: verification complete" width="420" />
+      <br /><b>4. Verification complete</b><br /><sub>See the caller's verified identity on screen</sub>
+    </td>
+  </tr>
+</table>
+
+### Caller link
+
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img src="ReadmeFiles/demo-05-caller-confirm-agent.png" alt="Caller: confirm verified employee" width="280" />
+      <br /><b>1. Confirm agent</b><br /><sub>Verify the employee name and badge</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="ReadmeFiles/demo-06-caller-verify.png" alt="Caller: verify identity" width="280" />
+      <br /><b>2. Verify identity</b><br /><sub>Present VerifiedEmployee via Authenticator</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="ReadmeFiles/demo-07-caller-complete.png" alt="Caller: verification complete" width="280" />
+      <br /><b>3. Complete</b><br /><sub>Continue the support call with confidence</sub>
+    </td>
+  </tr>
+</table>
+
+See [Usage](#usage) for step-by-step instructions. To regenerate screenshots after UI changes, run `.\scripts\capture-readme-screenshots.ps1`.
+
 ## Architecture
 
 ```
@@ -141,20 +191,22 @@ If you skipped Step 2, run `register-agent-app.ps1` now and set `AzureAd__Client
 
 ## Usage
 
-### Agent flow
+### Agent portal (4 steps)
 
-1. Open the portal and sign in with your work account
-2. Click **Start Verification**
-3. Scan the QR code with Microsoft Authenticator and share your VerifiedEmployee credential
-4. After verification succeeds, copy the caller link and send it to the other person (SMS, email, Teams, etc.)
-5. Wait for caller verification to complete
+Matches the on-screen **Step X of 4** flow in the verification portal.
 
-### Caller flow
+1. **Start session** — Open the portal, sign in with your work account, and click **Start Verification**. ([screenshot](ReadmeFiles/demo-01-agent-start.png))
+2. **Verify yourself** — Scan the QR code with Microsoft Authenticator and share your VerifiedEmployee credential. ([screenshot](ReadmeFiles/demo-02-agent-verify.png))
+3. **Send link to caller** — After you are verified, copy the caller link and send it to the other person (SMS, email, Teams, etc.). ([screenshot](ReadmeFiles/demo-03-agent-share-link.png))
+4. **Verification complete** — When the caller finishes, their verified name and email appear on screen. ([screenshot](ReadmeFiles/demo-04-agent-complete.png))
 
-1. Open the link shared by the initiator (`/caller/{sessionId}`)
-2. Confirm the verified employee name and badge
-3. Scan the QR code and share your VerifiedEmployee credential
-4. See confirmation when verification completes
+### Caller link (3 steps)
+
+The caller opens `/caller/{sessionId}` from the link you shared.
+
+1. **Confirm agent** — Check the verified employee badge and agent name before continuing. ([screenshot](ReadmeFiles/demo-05-caller-confirm-agent.png))
+2. **Verify identity** — Scan the QR code and share your VerifiedEmployee credential from Microsoft Authenticator. ([screenshot](ReadmeFiles/demo-06-caller-verify.png))
+3. **Complete** — Confirmation appears when verification succeeds; continue your support call. ([screenshot](ReadmeFiles/demo-07-caller-complete.png))
 
 ## Customization (branding)
 
@@ -235,10 +287,11 @@ Common causes and fixes:
 ```
 Verified-Helpdesk/
 ├── ARMTemplate/template.json   # Deploy to Azure
+├── ReadmeFiles/                # README images (demo walkthrough, deploy button)
 ├── deploy.cmd / .deployment    # Kudu custom deploy
 ├── Controllers/                # Agent, Caller, API, Callback
 ├── Services/                   # Session, Audit, Verified ID
-├── scripts/                    # MSI, app registration, and Azure provider helpers
+├── scripts/                    # MSI, app registration, screenshot capture, Azure helpers
 └── Views/                      # Agent and caller portals
 ```
 

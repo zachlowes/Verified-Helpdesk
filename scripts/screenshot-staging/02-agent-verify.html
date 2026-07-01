@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verified Helpdesk - Contoso</title>
+  <link rel="stylesheet" href="/wwwroot/lib/bootstrap/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="/wwwroot/css/site.css" />
+</head>
+<body>
+  <header>
+    <nav class="navbar navbar-expand-sm portal-navbar border-bottom box-shadow">
+      <div class="container">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="#"><span>Contoso</span></a>
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><span class="navbar-text me-3">alex.morgan@contoso.com</span></li>
+          <li class="nav-item"><a class="nav-link" href="#">Sign out</a></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+  <div class="portal-page">
+    <main role="main">
+      <div class="portal-hero">
+        <h1>Verification Portal</h1>
+        <p class="lead">Start a bidirectional identity verification session with a caller.</p>
+        <p class="portal-disclaimer">Verification state is held in memory only for the duration of a session. No credential data is persisted by this application.</p>
+      </div>
+      <div class="portal-content">
+        <div class="portal-panel">
+          <p class="portal-step-indicator">Step 2 of 4</p>
+          <div class="portal-step-header">
+            <h2>Verify yourself</h2>
+            <p>Present your VerifiedEmployee credential from Microsoft Authenticator.</p>
+          </div>
+          <div id="agent-qrcode" class="qrcode-container"></div>
+          <p class="portal-status">Waiting for your verification...</p>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="portal-footer">
+    <div class="container">&copy; 2026 Contoso</div>
+  </footer>
+  <script src="/wwwroot/js/qrcode.min.js"></script>
+  <script>new QRCode(document.getElementById("agent-qrcode"), { width: 180, height: 180 }).makeCode("https://verify.example/demo");</script>
+</body>
+</html>
