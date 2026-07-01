@@ -19,3 +19,4 @@ appsettings.Development.json
 appsettings.Local.json
 scripts/node_modules/
 ReadmeFiles/.playwright-auth.json
+ReadmeFiles/.capture-frames/
