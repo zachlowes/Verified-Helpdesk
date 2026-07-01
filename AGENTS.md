@@ -5,7 +5,6 @@
 | Host | Name | Email |
 |------|------|-------|
 | **GitHub** (this repo) | zachlowes | zlowes@live.com |
-| GitLab | Softboat | softboat@proton.me |
 
 This is a **GitHub** repository. Every commit, amend, and history rewrite must use `zachlowes <zlowes@live.com>` for both author and committer.
 
